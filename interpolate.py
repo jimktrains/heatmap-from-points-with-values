@@ -59,7 +59,7 @@ m = 1./math.hypot(sigma, sigma)
 b = 1
 
 def decay(x):
-    return math.pow(0.9, x)
+    return math.pow(0.75, x)
     return (-m*x) + b
     return math.cos(x * m/2. * math.pi / 4)
     return 1 - 1 / (1 + math.exp((x-(sigma/2.))))
@@ -73,14 +73,10 @@ def y(lat):
 
 processed = []
 cntr = np.zeros( (x_size, y_size) ) 
-cnt = 0
 for row in rows:
-  cnt += 1
-  if cnt % 10 == 0: print cnt
   i = x(float(row['Lon']))
   j = y(float(row['Lat']))
   n = ((cntr[j,i] * raster[j,i]) + row['Strength']) / (1 + cntr[j,i]);
-  print cntr[j,i], raster[j,i],  row['Strength'], n
   raster[j,i] = n
   cntr[j,i] += 1
   pair = (j,i)
@@ -93,13 +89,12 @@ for pair in processed:
 
 values = sorted(values)
 
-print values
 ptile = 20
 ptiles = []
 s = len(values)
 for i in range(ptile-1):
    ptiles.append(values[int(s * float(1)/float(ptile) * (i+1))])
-print ptiles
+#print ptiles
 
 for pair in processed:
   (j,i) = pair
