@@ -12,8 +12,8 @@ rows = []
 output_file = "out.tif"
 
 
-input_file = "../allentown_heatmap_spreadsheet.csv"
-#input_file = "../south-side_20140913.csv"
+#input_file = "../allentown_heatmap_spreadsheet.csv"
+input_file = "../south-side_20140913.csv"
 
 max_lon = -180
 min_lon =  180
