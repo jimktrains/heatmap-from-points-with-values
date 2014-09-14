@@ -13,15 +13,38 @@ output_file = "out.tif"
 
 
 input_file = "../allentown_heatmap_spreadsheet.csv"
-max_lon = -79.96990
-max_lat =  40.43090
- 
-min_lon = -80.00625
-min_lat =  40.40250
+#input_file = "../south-side_20140913.csv"
 
+max_lon = -180
+min_lon =  180
+
+max_lat = 0
+min_lat = 90
 
 sq_size = 5
 deg_per_block = 0.0001
+
+with open(input_file) as csv_file:
+    csvfr = csv.DictReader(csv_file)
+    for row in csvfr:
+        lat = row['Lat'] = float(row['Lat'])
+        lon = row['Lon'] = float(row['Lon'])
+        row['Strength'] = float(row['Strength'])
+
+        if lat < min_lat: min_lat = lat
+        if lat > max_lat: max_lat = lat
+        if lon < min_lon: min_lon = lon
+        if lon > max_lon: max_lon = lon
+
+        rows.append(row)
+
+extra_size = ((5+sq_size) * deg_per_block)
+
+min_lat -= extra_size
+max_lat += extra_size
+
+min_lon -= extra_size
+max_lon += extra_size
 
 # Compute the image size in blocks
 lon_size = int((max_lon - min_lon) / deg_per_block)
@@ -35,14 +58,6 @@ def x(lon):
 def y(lat):
     return int((lat - min_lat)/deg_per_block)
 
-with open(input_file) as csv_file:
-    csvfr = csv.DictReader(csv_file)
-    for row in csvfr:
-        row['Lat'] = float(row['Lat'])
-        row['Lon'] = float(row['Lon'])
-        row['Strength'] = float(row['Strength'])
-
-        rows.append(row)
 
 
 processed = {}
