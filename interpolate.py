@@ -12,6 +12,7 @@ rows = []
 output_file = "out.tif"
 
 
+input_file = "../allentown_heatmap_spreadsheet.csv"
 max_lon = -79.96990
 max_lat =  40.43090
  
@@ -34,7 +35,7 @@ def x(lon):
 def y(lat):
     return int((lat - min_lat)/deg_per_block)
 
-with open("../allentown_heatmap_spreadsheet.csv") as csv_file:
+with open(input_file) as csv_file:
     csvfr = csv.DictReader(csv_file)
     for row in csvfr:
         row['Lat'] = float(row['Lat'])
