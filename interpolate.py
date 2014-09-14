@@ -50,8 +50,10 @@ max_lon += extra_size
 lon_size = int((max_lon - min_lon) / deg_per_block)
 lat_size = int((max_lat - min_lat) / deg_per_block) 
 
+decay_factor = math.exp( math.log(0.75) * 5. / float(sq_size))
+
 def decay(x):
-    return math.pow(0.75, x)
+    return math.pow(decay_factor, x)
 
 def x(lon):
     return int((lon - min_lon)/deg_per_block)
