@@ -4,16 +4,39 @@ import random
 from osgeo import osr, gdal
 import math
 import csv
+import argparse
+
+
+parser = argparse.ArgumentParser(description="converts Lat/Lon, values." + 
+                                 "to a heatmap")
+parser.add_argument("-i", "--in-file", dest="input_file",
+    help="Gets data from FILE", metavar="FILE")
+parser.add_argument("-o", "--out-file", dest="output_file",
+    help="write image to FILE", metavar="FILE")
+parser.add_argument("-r", "--radius", dest="radius", type=int,
+    help="Radius to bleed over", metavar="RADIUS", default=5)
+parser.add_argument("-d", "--decay", dest="decay", type=float,
+    help="Exponent for the decay function. If not specified will be " +
+         "generated basd on the radius", metavar="DECAY")
+parser.add_argument("-p", "--degrees-per-pixel", dest="dpp", type=float,
+    help="Resolution of the image in degrees per pixes" + 
+         "If not specified will be generated based on radius", 
+    metavar="DEGPERPIX")
+
+
+options = parser.parse_args()
+
+print options
+
+if options.input_file is None:
+    parser.print_help()
+    parser.error("input file is required")
+if options.output_file is None:
+    parser.print_help()
+    parser.error("output file is required")
 
 rows = []
 
-
-# Set file vars
-output_file = "out.tif"
-
-
-#input_file = "../allentown_heatmap_spreadsheet.csv"
-input_file = "../south-side_20140913.csv"
 
 max_lon = -180
 min_lon =  180
@@ -21,10 +44,8 @@ min_lon =  180
 max_lat = 0
 min_lat = 90
 
-sq_size = 5
-deg_per_block = 0.0001
 
-with open(input_file) as csv_file:
+with open(options.input_file) as csv_file:
     csvfr = csv.DictReader(csv_file)
     for row in csvfr:
         lat = row['Lat'] = float(row['Lat'])
@@ -38,6 +59,16 @@ with open(input_file) as csv_file:
 
         rows.append(row)
 
+sq_size = options.radius
+
+deg_per_block = options.dpp
+if deg_per_block is None:
+    deg_per_block = 0.0001 * 5 / sq_size
+
+decay_factor = options.decay
+if decay_factor is None:
+    decay_factor = math.exp( math.log(0.75) * 5. / float(sq_size))
+
 extra_size = ((5+sq_size) * deg_per_block)
 
 min_lat -= extra_size
@@ -50,7 +81,6 @@ max_lon += extra_size
 lon_size = int((max_lon - min_lon) / deg_per_block)
 lat_size = int((max_lat - min_lat) / deg_per_block) 
 
-decay_factor = math.exp( math.log(0.75) * 5. / float(sq_size))
 
 def decay(x):
     return math.pow(decay_factor, x)
@@ -62,6 +92,14 @@ def y(lat):
 
 
 
+# Groups all the readings into their cell on the map
+# This is done for 2 reasons:
+#  1. Cuts down on the number of runs needed during the more expensive
+#     part of the program
+#  2. Helps combat oversampling by averaging the readings taken near each
+#     other
+# It's placed into an array instead of a raster matrix because the number
+# of readings is much less than the number of pixels
 processed = {}
 cntr = {}
 for row in rows:
@@ -74,8 +112,8 @@ for row in rows:
         processed[idx] = 0
         cntr[idx] = 0
 
-    # Average all readings that belong in this cell
-    n = ((cntr[idx] * processed[idx]) + row['Strength']) / (1 + cntr[idx]);
+    # Running average of all readings that belong in this cell
+    n = ((cntr[idx] * processed[idx]) + row['Strength']) / (1 + cntr[idx])
     processed[idx] = n
     cntr[idx] += 1
 
@@ -114,7 +152,7 @@ raster *=  255
 
 # Create gtif
 driver = gdal.GetDriverByName("GTiff")
-dst_ds = driver.Create(output_file, lon_size, lat_size, 1, gdal.GDT_Byte )
+dst_ds = driver.Create(options.output_file, lon_size, lat_size, 1, gdal.GDT_Byte )
 
 # Don't ask, I don't know why the order is like this
 # top left x, w-e pixel resolution, rotation, 
